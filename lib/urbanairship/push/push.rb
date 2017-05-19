@@ -103,7 +103,7 @@ module Urbanairship
           body: nil,
           url: url
         )
-        payload = JSON.load(response_body)
+        payload = response_body['body']
 
         p = Push.new(client)
         p.audience = payload['push']['audience']
