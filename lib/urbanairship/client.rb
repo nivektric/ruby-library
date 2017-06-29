@@ -56,20 +56,25 @@ module Urbanairship
 
         logger.debug(debug)
 
-        response = RestClient::Request.execute(
-          method: method,
-          url: url,
-          headers: headers,
-          user: @key,
-          password: @secret,
-          payload: body,
-          timeout: 5
-        )
+        begin
+          response = RestClient::Request.execute(
+            method: method,
+            url: url,
+            headers: headers,
+            user: @key,
+            password: @secret,
+            payload: body,
+            timeout: 5
+          )
+          logger.debug("Received #{response.code} response. Headers:\n\t#{response.headers}\nBody:\n\t#{response.body}")
+          Response.check_code(response.code, response)
 
-        logger.debug("Received #{response.code} response. Headers:\n\t#{response.headers}\nBody:\n\t#{response.body}")
-        Response.check_code(response.code, response)
-
-        self.class.build_response(response)
+          self.class.build_response(response)
+        rescue RestClient::ExceptionWithResponse => e
+          logger.error("Received #{e.http_code} response. Headers:\n\t#{e.http_headers}\nBody:\n\t#{e.http_body}")
+        rescue Exception => e
+          logger.error("Unexpected exception in UA request: #{e.message}")
+        end
       end
 
       # Create a Push Object
