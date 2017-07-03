@@ -47,14 +47,7 @@ module Urbanairship
         headers['Content-type'] = content_type unless content_type.nil?
         headers['Content-Encoding'] = encoding unless encoding.nil?
 
-        debug = "Making #{method} request to #{url}.\n"+
-            "\tHeaders:\n"
-        debug += "\t\tcontent-type: #{content_type}\n" unless content_type.nil?
-        debug += "\t\tcontent-encoding: gzip\n" unless encoding.nil?
-        debug += "\t\taccept: application/vnd.urbanairship+json; version=3\n"
-        debug += "\tBody:\n#{body}" unless body.nil?
-
-        logger.debug(debug)
+        logger.debug(request_log_msg(method: method, url: url, body: body, content_type: content_type, encoding: encoding))
 
         begin
           response = RestClient::Request.execute(
@@ -71,10 +64,31 @@ module Urbanairship
 
           self.class.build_response(response)
         rescue RestClient::ExceptionWithResponse => e
-          logger.error("Received #{e.http_code} response. Headers:\n\t#{e.http_headers}\nBody:\n\t#{e.http_body}")
+          request_msg = request_log_msg(method: method, url: url, body: body, content_type: content_type, encoding: encoding)
+          response_msg = "Received #{e.http_code} response. Headers:\n\t#{e.http_headers}\nBody:\n\t#{e.http_body}"
+          logger.error(response_msg)
+
+          msg = request_msg + "\n" + response_msg
+          puts msg
         rescue Exception => e
-          logger.error("Unexpected exception in UA request: #{e.message}")
+          request_msg = request_log_msg(method: method, url: url, body: body, content_type: content_type, encoding: encoding)
+          error_msg = "Unexpected exception in UA request: #{e.message}"
+          logger.error(error_msg)
+
+          msg = request_msg + "\n" + error_msg
+          puts msg
         end
+      end
+
+      def request_log_msg(method: required('method'), url: required('url'), body: nil,
+                          content_type: nil, encoding: nil)
+
+        msg = "Making #{method} request to #{url}.\n"+
+          "\tHeaders:\n"
+        msg += "\t\tcontent-type: #{content_type}\n" unless content_type.nil?
+        msg += "\t\tcontent-encoding: gzip\n" unless encoding.nil?
+        msg += "\t\taccept: application/vnd.urbanairship+json; version=3\n"
+        msg += "\tBody:\n#{body}" unless body.nil?
       end
 
       # Create a Push Object
